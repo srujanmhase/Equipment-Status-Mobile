@@ -30,6 +30,8 @@ dependencies:
   cupertino_icons: ^1.0.2
   sliding_up_panel: ^2.0.0+1
   pie_chart: ^5.0.0
+  flutter_map: any
+  latlng: any
 
 dev_dependencies:
   flutter_test:

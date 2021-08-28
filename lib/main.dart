@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:pie_chart/pie_chart.dart';
+import 'package:pie_chart/pie_chart.dart' as pie;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 void main() {
   runApp(MyApp());
@@ -31,6 +34,28 @@ class _MyHomePageState extends State<MyHomePage> {
     return Material(
       child: SafeArea(
         child: SlidingUpPanel(
+          borderRadius: BorderRadius.circular(20),
+          minHeight: 70,
+          collapsed: Container(
+            decoration: BoxDecoration(
+                color: Colors.white, borderRadius: BorderRadius.circular(20)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Container(
+                  width: 80,
+                  height: 5,
+                  decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(50)),
+                ),
+                Text(
+                  'Status Map',
+                  style: TextStyle(fontSize: 21),
+                )
+              ],
+            ),
+          ),
           body: SingleChildScrollView(
             child: Padding(
               padding: EdgeInsets.fromLTRB(18, 40, 18, 0),
@@ -127,17 +152,29 @@ class _MyHomePageState extends State<MyHomePage> {
                           ],
                         ),
                         //Chart
-                        PieChart(
+                        pie.PieChart(
                           dataMap: dataMap,
-                          colorList: [Colors.white, Color(0xff8595ff)],
-                          chartType: ChartType.ring,
-                          chartRadius: 70,
+                          animationDuration: Duration(milliseconds: 800),
+                          chartLegendSpacing: 32,
+                          chartRadius: MediaQuery.of(context).size.width / 6,
+                          colorList: [
+                            Colors.blue.withOpacity(0.4),
+                            Colors.white
+                          ],
+                          initialAngleInDegree: 180,
+                          chartType: pie.ChartType.ring,
                           ringStrokeWidth: 10,
-                          legendOptions: LegendOptions(showLegends: false),
-                          chartValuesOptions: ChartValuesOptions(
-                            showChartValues: false,
+                          legendOptions: pie.LegendOptions(
+                            showLegends: false,
                           ),
-                        )
+                          chartValuesOptions: pie.ChartValuesOptions(
+                            showChartValueBackground: false,
+                            showChartValues: false,
+                            showChartValuesInPercentage: false,
+                            showChartValuesOutside: false,
+                            decimalPlaces: 1,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -270,8 +307,24 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
-          panel: Center(
-            child: Text('Status Map'),
+          panel: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    margin: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                    child: Text(
+                      'Status Map',
+                      style: TextStyle(fontSize: 26),
+                    ),
+                  ),
+                ],
+              ),
+              animatedMap(
+                height: 300,
+                isExp: false,
+              )
+            ],
           ),
         ),
       ),
@@ -318,34 +371,74 @@ class smallStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {},
-      child: Ink(
-        width: MediaQuery.of(context).size.width * (0.87 / 2.1),
-        height: 200,
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: Offset(10, 10))
-            ]),
-        child: Column(
-          children: [
-            Row(
-              children: [Text(this.code), Text(this.status)],
+    return Row(
+      children: [
+        InkWell(
+          onTap: () {},
+          child: Ink(
+            width: MediaQuery.of(context).size.width * (0.87 / 2.1),
+            //height: 250,
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.grey.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: Offset(10, 10))
+                ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(
+                  margin: EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Text(this.code,
+                          style: TextStyle(color: Colors.grey, fontSize: 17)),
+                      Text(
+                        this.status,
+                        style: TextStyle(color: Colors.amber, fontSize: 17),
+                      )
+                    ],
+                  ),
+                ),
+                Container(
+                    margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                    child: Text(
+                      'Since',
+                      style: TextStyle(fontSize: 15, color: Colors.grey),
+                    )),
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    this.since,
+                    style: TextStyle(fontSize: 25),
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_sharp,
+                        size: 15,
+                      ),
+                      Text(this.location)
+                    ],
+                  ),
+                ),
+                Icon(Icons.keyboard_arrow_right_sharp)
+              ],
             ),
-            Text('Since'),
-            Text(this.since),
-            Row(
-              children: [Icon(Icons.location_on_sharp), Text(this.location)],
-            ),
-            Icon(Icons.keyboard_arrow_right_sharp)
-          ],
+          ),
         ),
-      ),
+        SizedBox(
+          width: 15,
+        )
+      ],
     );
   }
 }
@@ -371,7 +464,7 @@ class _serverStatusState extends State<serverStatus> {
       child: AnimatedContainer(
         height: _height,
         width: double.infinity,
-        duration: Duration(milliseconds: 500),
+        duration: Duration(milliseconds: 200),
         decoration: BoxDecoration(
             //color: Colors.orange,
             gradient: LinearGradient(
@@ -385,7 +478,165 @@ class _serverStatusState extends State<serverStatus> {
                   blurRadius: 12,
                   offset: Offset(10, 10))
             ]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Container(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Text('Server',
+                      style: TextStyle(fontSize: 28, color: Colors.white)),
+                  Text('Monitoring',
+                      style: TextStyle(fontSize: 18, color: Colors.white))
+                ],
+              ),
+            ),
+            pie.PieChart(
+              dataMap: dataMap,
+              animationDuration: Duration(milliseconds: 800),
+              chartLegendSpacing: 32,
+              chartRadius: MediaQuery.of(context).size.width / 6,
+              colorList: [Colors.orange, Colors.white],
+              initialAngleInDegree: 180,
+              chartType: pie.ChartType.ring,
+              ringStrokeWidth: 10,
+              legendOptions: pie.LegendOptions(
+                showLegends: false,
+              ),
+              chartValuesOptions: pie.ChartValuesOptions(
+                showChartValueBackground: false,
+                showChartValues: false,
+                showChartValuesInPercentage: false,
+                showChartValuesOutside: false,
+                decimalPlaces: 1,
+              ),
+            ),
+            pie.PieChart(
+              dataMap: dataMap,
+              animationDuration: Duration(milliseconds: 800),
+              chartLegendSpacing: 32,
+              chartRadius: MediaQuery.of(context).size.width / 6,
+              colorList: [Colors.orange, Colors.white],
+              initialAngleInDegree: 180,
+              chartType: pie.ChartType.ring,
+              ringStrokeWidth: 10,
+              legendOptions: pie.LegendOptions(
+                showLegends: false,
+              ),
+              chartValuesOptions: pie.ChartValuesOptions(
+                showChartValueBackground: false,
+                showChartValues: false,
+                showChartValuesInPercentage: false,
+                showChartValuesOutside: false,
+                decimalPlaces: 1,
+              ),
+            )
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class animatedMap extends StatefulWidget {
+  double height;
+  bool isExp;
+
+  animatedMap({this.height, this.isExp});
+  @override
+  _animatedMapState createState() => _animatedMapState();
+}
+
+class _animatedMapState extends State<animatedMap> {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.87,
+      height: widget.height,
+      child: Stack(
+        children: [
+          FlutterMap(
+            options: MapOptions(
+              center: LatLng(19.115959, 72.891279),
+              zoom: 10.0,
+            ),
+            layers: [
+              TileLayerOptions(
+                  urlTemplate:
+                      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                  subdomains: ['a', 'b', 'c']),
+              MarkerLayerOptions(
+                markers: [
+                  Marker(
+                    width: 80.0,
+                    height: 80.0,
+                    point: LatLng(19.193146, 72.970930),
+                    builder: (ctx) => Container(
+                      child: Icon(Icons.location_on),
+                    ),
+                  ),
+                  Marker(
+                    width: 80.0,
+                    height: 80.0,
+                    point: LatLng(19.134124, 72.934538),
+                    builder: (ctx) => Container(
+                      child: Icon(Icons.location_on),
+                    ),
+                  ),
+                  Marker(
+                    width: 80.0,
+                    height: 80.0,
+                    point: LatLng(19.139509, 72.925071),
+                    builder: (ctx) => Container(
+                      child: Icon(
+                        Icons.location_on,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+                  Marker(
+                    width: 80.0,
+                    height: 80.0,
+                    point: LatLng(19.148554, 72.839032),
+                    builder: (ctx) => Container(
+                      child: Icon(Icons.location_on),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Positioned(
+              bottom: 10,
+              right: 10,
+              child: ElevatedButton(
+                  onPressed: () {
+                    if (widget.isExp) {
+                      Navigator.of(context).pop();
+                    } else {
+                      Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => mapPage()));
+                    }
+                  },
+                  child: Text(widget.isExp ? 'Back' : 'Expand')))
+        ],
+      ),
+    );
+  }
+}
+
+List blueList = [Colors.white, Color(0xff8595ff)];
+
+class mapPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return animatedMap(
+      height: MediaQuery.of(context).size.height,
+      isExp: true,
     );
   }
 }
