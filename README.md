@@ -2,6 +2,8 @@
 
 B.E. Project - Equipment Status App (Mobile)
 
+[![Alt text](https://img.youtube.com/vi/PGi_0ebEaGc/0.jpg)](https://www.youtube.com/watch?v=PGi_0ebEaGc)
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
